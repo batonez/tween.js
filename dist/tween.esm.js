@@ -65,13 +65,13 @@ var Easing = {
     },
     Sinusoidal: {
         In: function (amount) {
-            return 1 - Math.cos((amount * Math.PI) / 2);
+            return 1 - Math.sin(((1.0 - amount) * Math.PI) / 2);
         },
         Out: function (amount) {
             return Math.sin((amount * Math.PI) / 2);
         },
         InOut: function (amount) {
-            return 0.5 * (1 - Math.cos(Math.PI * amount));
+            return 0.5 * (1 - Math.sin(Math.PI * (0.5 - amount)));
         },
     },
     Exponential: {
@@ -144,11 +144,11 @@ var Easing = {
     Back: {
         In: function (amount) {
             var s = 1.70158;
-            return amount * amount * ((s + 1) * amount - s);
+            return amount === 1 ? 1 : amount * amount * ((s + 1) * amount - s);
         },
         Out: function (amount) {
             var s = 1.70158;
-            return --amount * amount * ((s + 1) * amount + s) + 1;
+            return amount === 0 ? 0 : --amount * amount * ((s + 1) * amount + s) + 1;
         },
         InOut: function (amount) {
             var s = 1.70158 * 1.525;
@@ -182,6 +182,25 @@ var Easing = {
             }
             return Easing.Bounce.Out(amount * 2 - 1) * 0.5 + 0.5;
         },
+    },
+    generatePow: function (power) {
+        if (power === void 0) { power = 4; }
+        power = power < Number.EPSILON ? Number.EPSILON : power;
+        power = power > 10000 ? 10000 : power;
+        return {
+            In: function (amount) {
+                return Math.pow(amount, power);
+            },
+            Out: function (amount) {
+                return 1 - Math.pow((1 - amount), power);
+            },
+            InOut: function (amount) {
+                if (amount < 0.5) {
+                    return Math.pow((amount * 2), power) / 2;
+                }
+                return (1 - Math.pow((2 - amount * 2), power)) / 2 + 0.5;
+            },
+        };
     },
 };
 
@@ -393,9 +412,10 @@ var Tween = /** @class */ (function () {
         this._isPlaying = false;
         this._reversed = false;
         this._delayTime = 0;
-        this._startTime = 0;
+        this._startTime = undefined;
         this._easingFunction = Easing.Linear.None;
         this._interpolationFunction = Interpolation.Linear;
+        // eslint-disable-next-line
         this._chainedTweens = [];
         this._onStartCallbackFired = false;
         this._id = Sequence.nextId();
@@ -423,10 +443,12 @@ var Tween = /** @class */ (function () {
         return this;
     };
     Tween.prototype.duration = function (d) {
+        if (d === void 0) { d = 1000; }
         this._duration = d;
         return this;
     };
     Tween.prototype.start = function (time) {
+        if (time === void 0) { time = now$1(); }
         if (this._isPlaying) {
             return this;
         }
@@ -446,7 +468,7 @@ var Tween = /** @class */ (function () {
         this._isPaused = false;
         this._onStartCallbackFired = false;
         this._isChainStopped = false;
-        this._startTime = time !== undefined ? (typeof time === 'string' ? now$1() + parseFloat(time) : time) : now$1();
+        this._startTime = time;
         this._startTime += this._delayTime;
         this._setupProperties(this._object, this._valuesStart, this._valuesEnd, this._valuesStartRepeat);
         return this;
@@ -547,7 +569,10 @@ var Tween = /** @class */ (function () {
             return this;
         }
         this._isPaused = false;
-        this._startTime += time - this._pauseStart;
+        if (this._startTime !== undefined)
+            this._startTime += time - this._pauseStart;
+        else
+            this._startTime = time;
         this._pauseStart = 0;
         // eslint-disable-next-line
         this._group && this._group.add(this);
@@ -560,14 +585,17 @@ var Tween = /** @class */ (function () {
         return this;
     };
     Tween.prototype.group = function (group) {
+        if (group === void 0) { group = mainGroup; }
         this._group = group;
         return this;
     };
     Tween.prototype.delay = function (amount) {
+        if (amount === void 0) { amount = 0; }
         this._delayTime = amount;
         return this;
     };
     Tween.prototype.repeat = function (times) {
+        if (times === void 0) { times = 0; }
         this._initialRepeat = times;
         this._repeat = times;
         return this;
@@ -577,17 +605,21 @@ var Tween = /** @class */ (function () {
         return this;
     };
     Tween.prototype.yoyo = function (yoyo) {
+        if (yoyo === void 0) { yoyo = false; }
         this._yoyo = yoyo;
         return this;
     };
     Tween.prototype.easing = function (easingFunction) {
+        if (easingFunction === void 0) { easingFunction = Easing.Linear.None; }
         this._easingFunction = easingFunction;
         return this;
     };
     Tween.prototype.interpolation = function (interpolationFunction) {
+        if (interpolationFunction === void 0) { interpolationFunction = Interpolation.Linear; }
         this._interpolationFunction = interpolationFunction;
         return this;
     };
+    // eslint-disable-next-line
     Tween.prototype.chain = function () {
         var tweens = [];
         for (var _i = 0; _i < arguments.length; _i++) {
@@ -628,15 +660,14 @@ var Tween = /** @class */ (function () {
             return true;
         var property;
         var elapsed;
-        var endTime = this._startTime + this._duration;
         if (!this._goToEnd && !this._isPlaying) {
-            if (time > endTime)
+            if (this._startTime !== undefined && time > this._startTime + this._duration)
                 return false;
             if (autoStart)
                 this.start(time);
         }
         this._goToEnd = false;
-        if (time < this._startTime) {
+        if (this._startTime === undefined || time < this._startTime) {
             return true;
         }
         if (this._onStartCallbackFired === false) {

@@ -31,7 +31,7 @@ export class Tween<T extends UnknownProps> {
 	private _isPlaying = false
 	private _reversed = false
 	private _delayTime = 0
-	private _startTime = 0
+	private _startTime?: number = undefined
 	private _easingFunction: EasingFunction = Easing.Linear.None
 	private _interpolationFunction: InterpolationFunction = Interpolation.Linear
 	// eslint-disable-next-line
@@ -240,7 +240,10 @@ export class Tween<T extends UnknownProps> {
 
 		this._isPaused = false
 
-		this._startTime += time - this._pauseStart
+                if (this._startTime !== undefined)
+                  this._startTime += time - this._pauseStart
+                else
+                  this._startTime = time
 
 		this._pauseStart = 0
 
@@ -337,16 +340,14 @@ export class Tween<T extends UnknownProps> {
 		let property
 		let elapsed
 
-		const endTime = this._startTime + this._duration
-
 		if (!this._goToEnd && !this._isPlaying) {
-			if (time > endTime) return false
+			if (this._startTime !== undefined && time > this._startTime + this._duration) return false
 			if (autoStart) this.start(time)
 		}
 
 		this._goToEnd = false
 
-		if (time < this._startTime) {
+		if (this._startTime === undefined || time < this._startTime) {
 			return true
 		}
 

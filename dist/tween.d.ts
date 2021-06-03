@@ -56,6 +56,11 @@ declare const Easing: {
         Out: (amount: number) => number;
         InOut: (amount: number) => number;
     };
+    generatePow: (power?: number) => {
+        In(amount: number): number;
+        Out(amount: number): number;
+        InOut(amount: number): number;
+    };
 };
 
 /**
@@ -93,7 +98,7 @@ declare class Tween<T extends UnknownProps> {
     private _isPlaying;
     private _reversed;
     private _delayTime;
-    private _startTime;
+    private _startTime?;
     private _easingFunction;
     private _interpolationFunction;
     private _chainedTweens;
@@ -110,7 +115,7 @@ declare class Tween<T extends UnknownProps> {
     isPlaying(): boolean;
     isPaused(): boolean;
     to(properties: UnknownProps, duration?: number): this;
-    duration(d: number): this;
+    duration(d?: number): this;
     start(time?: number): this;
     private _setupProperties;
     stop(): this;
@@ -118,19 +123,19 @@ declare class Tween<T extends UnknownProps> {
     pause(time?: number): this;
     resume(time?: number): this;
     stopChainedTweens(): this;
-    group(group: Group): this;
-    delay(amount: number): this;
-    repeat(times: number): this;
-    repeatDelay(amount: number): this;
-    yoyo(yoyo: boolean): this;
-    easing(easingFunction: EasingFunction): this;
-    interpolation(interpolationFunction: InterpolationFunction): this;
-    chain(...tweens: Array<Tween<UnknownProps>>): this;
-    onStart(callback: (object: T) => void): this;
-    onUpdate(callback: (object: T, elapsed: number) => void): this;
-    onRepeat(callback: (object: T) => void): this;
-    onComplete(callback: (object: T) => void): this;
-    onStop(callback: (object: T) => void): this;
+    group(group?: Group): this;
+    delay(amount?: number): this;
+    repeat(times?: number): this;
+    repeatDelay(amount?: number): this;
+    yoyo(yoyo?: boolean): this;
+    easing(easingFunction?: EasingFunction): this;
+    interpolation(interpolationFunction?: InterpolationFunction): this;
+    chain(...tweens: Array<Tween<any>>): this;
+    onStart(callback?: (object: T) => void): this;
+    onUpdate(callback?: (object: T, elapsed: number) => void): this;
+    onRepeat(callback?: (object: T) => void): this;
+    onComplete(callback?: (object: T) => void): this;
+    onStop(callback?: (object: T) => void): this;
     private _goToEnd;
     /**
      * @returns true if the tween is still playing after the update, false
@@ -232,6 +237,11 @@ declare const exports: {
             In: (amount: number) => number;
             Out: (amount: number) => number;
             InOut: (amount: number) => number;
+        };
+        generatePow: (power?: number) => {
+            In(amount: number): number;
+            Out(amount: number): number;
+            InOut(amount: number): number;
         };
     };
     Group: typeof Group;
